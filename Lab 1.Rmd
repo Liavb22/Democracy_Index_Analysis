@@ -1,0 +1,197 @@
+---
+title: "52414 - lab 1"
+author: "52414"
+date: "10/5/2023"
+output: html_document
+---
+
+```{r}
+library(tidyverse) # This includes dplyr, stringr, ggplot2, .. 
+library(data.table)
+library(rworldmap) # world map
+library(ggthemes)
+library(reshape2) # melt: change data-frame format long/wide
+library(e1071) # skewness and kurtosis
+library(rvest)
+library(corrplot)
+library(moments)
+library(spatstat.geom)
+
+```
+
+**Solution:** (Fill code, text, plots etc.)
+
+# 1.a. Loading the data via URL connection:
+
+```{r, cache=TRUE}
+democracy <- read_html("https://en.wikipedia.org/wiki/Democracy_Index")
+all.tables = html_nodes(democracy, "table")  
+regions <- as.data.frame(html_table(all.tables[4], fill = TRUE))
+countries <- as.data.frame(html_table(all.tables[6], fill = TRUE))
+components <- as.data.frame(html_table(all.tables[7], fill = TRUE))
+```
+
+# 1.b.
+
+```{r, cache=TRUE}
+countries_rate <- as.data.frame(countries)
+top_countries <- countries_rate %>% select(Country, X2022) %>% arrange(desc(X2022)) %>% head(5)
+bottom_countries <- countries_rate %>% select(Country, X2022) %>% arrange(X2022) %>% head(5)
+Average <- rowMeans(countries_rate %>% select(-c(Region,X2022.rank,Country, Regime.type)))
+top_countries_avg <- countries_rate %>% mutate(Average) %>% select(Country,Average) %>% arrange(desc(Average)) %>% head(5)
+bottom_countries_avg <- countries_rate %>% mutate(Average) %>% select(Country, Average) %>% arrange(Average) %>% head(5)
+```
+
+YOUR ANALYSIS HERE:
+
+Top countries in democracy index for 2022:
+
+```{r}
+top_countries
+```
+
+By 2006 -2022 Average:
+
+```{r}
+top_countries_avg
+```
+
+Lowest countries in democracy index for 2022:
+
+```{r}
+bottom_countries
+```
+
+By 2006 -2022 Average:
+
+```{r}
+bottom_countries_avg
+```
+
+# 2.a.
+
+```{r, cache=TRUE}
+p2 <- ggplot(countries)
+p2 <- p2 + geom_boxplot(aes(x=Region, y=X2022)) +theme(text = element_text(size = 6))
+p3 <- countries %>% select(Country,Region,X2022) %>% filter(Region == "Middle East and North Africa")
+p4 <- countries %>% select(Country,Region,X2022) %>% filter(Region == "Western Europe")
+out_3 <- boxplot.stats(p3$X2022)$out
+out_ind_3 <- which(p3$X2022 %in% c(out_3))
+out_4 <- boxplot.stats(p4$X2022)$out
+out_ind_4 <- which(p4$X2022 %in% c(out_4))
+p3[out_ind_3,]
+p4[out_ind_4,]
+
+```
+
+
+2.b.
+
+```{r, cache=TRUE}
+p5 <- ggplot(countries,aes(X2022)) + geom_density(alpha=.2, fill= "#00BFC4") + facet_wrap(~Region)
+p6 <- countries %>% 
+     group_by(Region) %>%
+     summarize(Mean = mean(X2022), Variance = var(X2022), Skewness = skewness(X2022), Kurtosis = kurtosis(X2022))
+```
+
+YOUR ANALYSIS HERE
+
+3.a.
+
+```{r, cache=TRUE}
+Countries_graphs <- function(df, names){
+  colnames <- colnames(df)
+  filtered_df <- df %>% filter(Country %in% names | Region %in% names ) %>%
+    select(colnames(countries)[which((colnames >= "X2006" & colnames <= "X2022") | (colnames == "Region" | colnames == "Country"))])
+  
+  
+  
+  
+  
+  
+  
+  
+}
+```
+
+YOUR ANALYSIS HERE
+
+3.b.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+4.  
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+5.a.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+5.b.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+6.a.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+6.b.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+6.c.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+7
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+8.a.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
+
+8.b.
+
+```{r, cache=TRUE}
+# YOUR CODE HERE
+```
+
+YOUR ANALYSIS HERE
