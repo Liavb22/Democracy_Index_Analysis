@@ -139,8 +139,8 @@ YOUR ANALYSIS HERE
 ```{r, cache=TRUE}
 col <- colnames(countries)
 
-max_value <- countries %>% select( colnames(countries)[which(x <= "X2022" & x >= "X2006")]) %>% apply( 1, max)
- min_value <- countries %>% select( colnames(countries)[which(x <= "X2022" & x >= "X2006")]) %>% apply( 1, min)
+max_value <- countries %>% select( colnames(countries)[which(col <= "X2022" & col >= "X2006")]) %>% apply( 1, max)
+ min_value <- countries %>% select( colnames(countries)[which(col <= "X2022" & col >= "X2006")]) %>% apply( 1, min)
  
 cntr <- countries %>% mutate(change = X2022 - X2006, max_value, min_value)
 
@@ -187,7 +187,12 @@ YOUR ANALYSIS HERE
 4.  
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+full_democracies <- seq(8,10,0.01)
+flawed_democracies <- seq(6,7.99,0.01)
+hybrid_regimes <- seq(4,5.99,0.01)
+authoritarian_regimes <- seq(0,3.99,0.01)
+
+
 ```
 
 YOUR ANALYSIS HERE
