@@ -136,10 +136,14 @@ YOUR ANALYSIS HERE
 
 3.b.
 
-```{r, cache=TRUE
+```{r, cache=TRUE}
 col <- colnames(countries)
 
-cntr <- countries %>% mutate(change = X2022 - X2006) %>% mutate( max = apply(1, max, na.rm=TRUE))
+max_value <- countries %>% select( colnames(countries)[which(x <= "X2022" & x >= "X2006")]) %>% apply( 1, max)
+ min_value <- countries %>% select( colnames(countries)[which(x <= "X2022" & x >= "X2006")]) %>% apply( 1, min)
+ 
+cntr <- countries %>% mutate(change = X2022 - X2006, max_value, min_value)
+
 
 cntr1 <- cntr %>% filter(change >= 1.5)
 clst1 <- cntr1$Country
@@ -153,9 +157,28 @@ clst3 <- cntr3$Country
 cntr4 <- cntr %>% filter(change <= -0.75 & change >= -1.5)
 clst4 <- cntr4$Country
 
-cntr5 <- cntr %>% filter()
+cntr5 <- cntr %>% mutate(min_ref = X2022 - min_value) %>% filter(change <= -0.75 & min_ref  >= 0.75)
+clst5 <- cntr5$Country
 
+cntr6 <- cntr %>% mutate(max_ref = X2022 - max_value) %>% filter(change >= 0.75 & max_ref  <= -0.75)
+clst6 <- cntr6$Country
 
+cntr7 <- cntr %>% mutate(Max_min = max_value -min_value) %>% filter(Max_min <= 0.5)
+clst7 <- cntr7$Country
+
+Country <- unique(c(clst1, clst2, clst3, clst4, clst5, clst6, clst7))
+clst1_7 <- as.data.frame(Country)
+cntr8 <- cntr %>% anti_join(clst1_7)
+clst8 <- cntr8$Country
+
+Countries_graphs(countries, clst1)
+Countries_graphs(countries, clst2)
+Countries_graphs(countries, clst3)
+Countries_graphs(countries, clst4)
+Countries_graphs(countries, clst5)
+Countries_graphs(countries, clst6)
+Countries_graphs(countries, clst7)
+Countries_graphs(countries, clst8)
 
 ```
 
