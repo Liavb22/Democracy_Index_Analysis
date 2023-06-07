@@ -197,13 +197,10 @@ colnames(rgm_prb) <- unique(regime_2006_type)
 rownames(rgm_prb) <- unique(regime_2006_type)
 for (i in colnames(rgm_prb)){
   for (j in rownames(rgm_prb)){
-    rgm_prb[i,j] <- length(which(regime_in_2006$regime_pairs %in% paste(i,j)))/length(countries$Country)
+    rgm_prb[i,j] <- length(which(regime_in_2006$regime_pairs %in% paste(i,j)))/###דרוש תיקן##length(which(countries$Regime.type %in% j))
   }
 } 
-
-
-#length(which(regime_in_2006$regime_pairs %in% 'Hybrid regime hybrid_regimes'))
-
+heatmap(rgm_prb)
 ```
 
 YOUR ANALYSIS HERE
