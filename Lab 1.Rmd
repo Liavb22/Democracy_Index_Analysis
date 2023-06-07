@@ -187,11 +187,22 @@ YOUR ANALYSIS HERE
 4.  
 
 ```{r, cache=TRUE}
-full_democracies <- seq(8,10,0.01)
-flawed_democracies <- seq(6,7.99,0.01)
-hybrid_regimes <- seq(4,5.99,0.01)
-authoritarian_regimes <- seq(0,3.99,0.01)
 
+index_2006 <- countries$X2006
+regime_2006_type <- c('Full democracy','Flawed democracy','Hybrid regime','Authoritarian')[(index_2006 %in% seq(8,10,0.01)) + 2*(index_2006 %in% seq(6,7.99,0.01)) + 3*(index_2006 %in% seq(4,5.99,0.01)) + 4*(index_2006 %in% seq(0,3.99,0.01))]
+regime_2006_type
+regime_in_2006 <- countries %>% mutate(regime_pairs = paste(Regime.type,regime_2006_type))
+rgm_prb <- matrix(c(1:16),ncol = 4,byrow = TRUE)
+colnames(rgm_prb) <- unique(regime_2006_type)
+rownames(rgm_prb) <- unique(regime_2006_type)
+for (i in colnames(rgm_prb)){
+  for (j in rownames(rgm_prb)){
+    rgm_prb[i,j] <- length(which(regime_in_2006$regime_pairs %in% paste(i,j)))/length(countries$Country)
+  }
+} 
+
+
+#length(which(regime_in_2006$regime_pairs %in% 'Hybrid regime hybrid_regimes'))
 
 ```
 
