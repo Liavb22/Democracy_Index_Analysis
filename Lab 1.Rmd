@@ -101,25 +101,62 @@ YOUR ANALYSIS HERE
 ```{r, cache=TRUE}
 Countries_graphs <- function(df, names){
   colnames <- colnames(df)
-  filtered_df <- df %>% filter(Country %in% names | Region %in% names ) %>%
-    select(colnames(countries)[which((colnames >= "X2006" & colnames <= "X2022") | (colnames == "Region" | colnames == "Country"))])
+  if (sum(is.element(names, df$Region)) > 0) { x <- "Region" }
+  else x <- "Country"
   
+  y <-melt(df, id.vars = x)
   
-  
-  
-  
-  
-  
-  
+  if (x == "Region"){
+    print("this is regions")
+    y <- y %>% filter(Region %in% names)
+    print(y , "after filtering")
+    y <- y%>%  mutate(year = as.Date(as.character(ISOdate(as.numeric(gsub('X', '', variable)),12,31)))) %>% 
+    filter(! year< "2006-12-31") %>% mutate(val = as.double(value))
+    print(y)
+    ggplot(y, aes(x = year, y =val)) + geom_line(aes(color = Region)) + labs(title="Democracy", 
+         subtitle="Between the years 2006-2022",
+         caption="Source: Wikipedia",
+         x="Years",
+         fill="Entities") 
+  }
+  else{
+    y <- y %>% filter(Country %in% names)
+    y <- y%>%  mutate(year = as.Date(as.character(ISOdate(as.numeric(gsub('X', '', variable)),12,31)))) %>% 
+    filter(! year< "2006-12-31") %>% mutate(val = as.double(value))
+    ggplot(y, aes(x = year, y =val)) + geom_line(aes(color = Country))+ labs(title="Democracy Index", 
+         subtitle="Between the years 2006-2022",
+         caption="Source: Wikipedia",
+         x="Years",
+         fill="Entities") }
 }
+Countries_graphs(regions, c("World", "North America", "Asia and Australasia"))
 ```
 
 YOUR ANALYSIS HERE
 
 3.b.
 
-```{r, cache=TRUE}
-# YOUR CODE HERE
+```{r, cache=TRUE
+col <- colnames(countries)
+
+cntr <- countries %>% mutate(change = X2022 - X2006) %>% mutate( max = apply(1, max, na.rm=TRUE))
+
+cntr1 <- cntr %>% filter(change >= 1.5)
+clst1 <- cntr1$Country
+
+cntr2 <- cntr %>% filter(change <= -1.5)
+clst2 <- cntr2$Country
+
+cntr3 <- cntr %>% filter(change >= 0.75 & change <= 1.5)
+clst3 <- cntr3$Country
+
+cntr4 <- cntr %>% filter(change <= -0.75 & change >= -1.5)
+clst4 <- cntr4$Country
+
+cntr5 <- cntr %>% filter()
+
+
+
 ```
 
 YOUR ANALYSIS HERE
