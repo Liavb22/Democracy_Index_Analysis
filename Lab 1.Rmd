@@ -189,15 +189,18 @@ YOUR ANALYSIS HERE
 ```{r, cache=TRUE}
 
 index_2006 <- countries$X2006
-regime_2006_type <- c('Full democracy','Flawed democracy','Hybrid regime','Authoritarian')[(index_2006 %in% seq(8,10,0.01)) + 2*(index_2006 %in% seq(6,7.99,0.01)) + 3*(index_2006 %in% seq(4,5.99,0.01)) + 4*(index_2006 %in% seq(0,3.99,0.01))]
-regime_2006_type
-regime_in_2006 <- countries %>% mutate(regime_pairs = paste(Regime.type,regime_2006_type))
+regime_2006_type <- c('Full democracy','Flawed democracy','Hybrid regime','Authoritarian')
+
+
+regime_mobility <- countries %>% mutate(regime_2006 = regime_2006_type[(X2006<=10&X2006>=8)+ 2*(X2006 <8 & X2006 >= 6) + 3*(X2006 < 6 & X2006 >=4) +4*(X2006 < 4 & X2006 >=0)])
+                  
+regime_mobility <- regime_mobility %>% mutate(regime_pairs = paste(Regime.type,regime_2006))
 rgm_prb <- matrix(c(1:16),ncol = 4,byrow = TRUE)
-colnames(rgm_prb) <- unique(regime_2006_type)
-rownames(rgm_prb) <- unique(regime_2006_type)
+colnames(rgm_prb) <- paste(regime_2006_type) #Regime type in 2022
+rownames(rgm_prb) <- regime_2006_type #Regime type in 2006
 for (i in colnames(rgm_prb)){
   for (j in rownames(rgm_prb)){
-    rgm_prb[i,j] <- length(which(regime_in_2006$regime_pairs %in% paste(i,j)))/###דרוש תיקן##length(which(countries$Regime.type %in% j))
+    rgm_prb[j,i] <- length(which(regime_mobility$regime_pairs %in% paste(j,i)))/length(which(regime_mobility$Regime.type %in% j))
   }
 } 
 heatmap(rgm_prb)
