@@ -212,38 +212,39 @@ YOUR ANALYSIS HERE
 
 ```{r, cache=TRUE}
 # Load GDP table
-
-democracy <- read_html("https://en.wikipedia.org/wiki/Democracy_Index")
-all.tables = html_nodes(democracy, "table")  
-regions <- as.data.frame(html_table(all.tables[4], fill = TRUE))
-
 gdp_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita")
 gdp_tables <- html_nodes(gdp_page, "table")
 gdp_df <- as.data.frame(html_table(gdp_tables[2], fill = TRUE))
-colnames(gdp_df) <- gdp_df[1,]
+colnames(gdp_df) <- paste(colnames(gdp_df), "-", gdp_df[1,])
+colnames(gdp_df)[1] <- "Country"
+gdp_df$Country <- substr(gdp_df$Country, 1, nchar(gdp_df$Country)- 2)
 
 # Load population size table
 population_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
 population_table <- html_table(html_nodes(population_page, "table")[[2]])
 population_df <- data.frame(population_table)
+colnames(population_df) <- population_df[1,]
+colnames(population_df)[2] <- "Country"
 
 # Load incarceration rates table
 incarceration_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_by_incarceration_rate")
 incarceration_table <- html_table(html_nodes(incarceration_page, "table")[[2]])
 incarceration_df <- data.frame(incarceration_table)
+colnames(incarceration_df)[1] <- "Country"
 
 # Load area table
 area_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area")
 area_table <- html_table(html_nodes(area_page, "table")[[2]])
 area_df <- data.frame(area_table)
+colnames(area_df)[2] <- "Country"
 
 
 # Join tables using country names
-joined_table <- democracy_df %>%
-  left_join(gdp_df, by = c("Country" = "Country")) %>%
-  left_join(population_df, by = c("Country" = "Country")) %>%
-  left_join(incarceration_df, by = c("Country" = "Country")) %>%
-  left_join(area_df, by = c("Country" = "Country"))
+joined_table <- countries %>%
+  full_join(gdp_df, by = c("Country" = "Country")) %>%
+  full_join(population_df, by = c("Country" = "Country")) %>%
+  full_join(incarceration_df, by = c("Country" = "Country")) %>%
+  full_join(area_df, by = c("Country" = "Country"))
 
 # Display top five rows of the joined table
 head(joined_table, 5)
