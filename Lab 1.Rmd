@@ -287,7 +287,22 @@ YOUR ANALYSIS HERE
 7
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+country_numeric <- apply(list_by_country[,5:19], 2, as.numeric)
+country_lst <- data.frame(html_table(all.tables[6]))
+country_slim_lst <- data.table(select(country_lst, X2022.rank, Country, X2022))
+tmp_heat <-rowMeans(country_numeric[,-1:-4]) 
+country_slim_lst <- mutate(.data = country_slim_lst, avg = tmp_heat)
+countries_avg_rating = arrange(country_slim_lst, Country)
+#we need to replace Eswatini with Swaziland
+countries_avg_rating$Country = gsub("Eswatini", "Swaziland", countries_avg_rating$Country)
+#again here we need to replace North Macedonia with Macedonia
+countries_avg_rating$Country = gsub("North Macedonia", "Macedonia", countries_avg_rating$Country)
+#using the join function to join all the tables:
+heat_map_dat = joinCountryData2Map(countries_avg_rating, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
+
+mapCountryData(heat_map_dat, nameColumnToPlot = "avg", mapTitle = "Average Democracy Index by Country", addLegend = TRUE)
+
+
 ```
 
 YOUR ANALYSIS HERE
