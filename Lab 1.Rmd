@@ -293,15 +293,29 @@ country_slim_lst <- data.table(select(country_lst, X2022.rank, Country, X2022))
 tmp_heat <-rowMeans(country_numeric[,-1:-4]) 
 country_slim_lst <- mutate(.data = country_slim_lst, avg = tmp_heat)
 countries_avg_rating = arrange(country_slim_lst, Country)
+
 #we need to replace Eswatini with Swaziland
 countries_avg_rating$Country = gsub("Eswatini", "Swaziland", countries_avg_rating$Country)
+
 #again here we need to replace North Macedonia with Macedonia
 countries_avg_rating$Country = gsub("North Macedonia", "Macedonia", countries_avg_rating$Country)
+
 #using the join function to join all the tables:
 heat_map_dat = joinCountryData2Map(countries_avg_rating, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
 
-mapCountryData(heat_map_dat, nameColumnToPlot = "avg", mapTitle = "Average Democracy Index by Country", addLegend = TRUE)
+#the white countrys are those who does not have an index of democracy
+mapCountryData(heat_map_dat, nameColumnToPlot = "avg", mapTitle = "Average democracy index by Country", addLegend = TRUE)
 
+#now we will repeat this function to show the differences between 2006 and 2022:
+
+country_lst$Country = gsub("Eswatini", "Swaziland", country_lst$Country)
+country_lst$Country = gsub("North Macedonia", "Macedonia", country_lst$Country)
+democracy_index = country_lst %>% select(Country, X2022, X2006) %>%
+  mutate(Difference = (X2022 - X2006)) %>% arrange(Country)
+
+dimocracymaps_heat = joinCountryData2Map(democracy_index, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
+
+mapCountryData(dimocracymaps_heat, nameColumnToPlot = "Difference", mapTitle = "The difference index between 2022 to 2006 of democracy", addLegend = TRUE)
 
 ```
 
@@ -310,7 +324,28 @@ YOUR ANALYSIS HERE
 8.a.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+components_lst <- data.frame(html_table(all.tables[7]))
+
+#we will change the columns names by a new vector
+colnames(components_lst) <- c("Rank", "chage_in_rank", "Country",  "Regime_type", "Overall_score", "chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+
+# Removing all the "Na" cells
+components_lst <- components_lst[complete.cases(components_lst), ]
+
+#Using the Union for all columns, as numeric
+components_lst_numeric <- c("Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+
+# Using the as.numeric function to verify its all numeric
+components_lst[, components_lst_numeric] <- sapply(components_lst[, components_lst_numeric], as.numeric)
+
+
+#Using the merge function to merge all the columns
+country_lst <- merge(country_lst, components_lst, by = "Country", x.all = FALSE)
+
+
+#Display the top 5 rows:
+head(components_lst, 5)
+
 ```
 
 YOUR ANALYSIS HERE
