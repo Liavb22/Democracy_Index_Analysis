@@ -217,7 +217,11 @@ gdp_tables <- html_nodes(gdp_page, "table")
 gdp_df <- as.data.frame(html_table(gdp_tables[2], fill = TRUE))
 colnames(gdp_df) <- paste(colnames(gdp_df), "-", gdp_df[1,])
 colnames(gdp_df)[1] <- "Country"
-gdp_df$Country <- substr(gdp_df$Country, 1, nchar(gdp_df$Country)- 2)
+gdp_df$Country <- gsub("\\s*\\*$", "" , gdp_df$Country)
+
+
+#gdp_df$Country <- gsub("\\s*\\*$", "", gsub("\\s+$", "", gdp_df$Country))
+
 
 # Load population size table
 population_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
@@ -232,6 +236,9 @@ incarceration_table <- html_table(html_nodes(incarceration_page, "table")[[2]])
 incarceration_df <- data.frame(incarceration_table)
 colnames(incarceration_df)[1] <- "Country"
 
+incarceration_df$Country <- gsub("\\s*\\*(\\s*\\[Note\\])?$", "", gsub("\\s+$", "", incarceration_df$Country))
+incarceration_df$Country <- gsub("(\\s*\\[Note\\])?$", "", gsub("\\s+$", "", incarceration_df$Country))
+
 # Load area table
 area_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area")
 area_table <- html_table(html_nodes(area_page, "table")[[2]])
@@ -241,7 +248,7 @@ colnames(area_df)[2] <- "Country"
 
 # Join tables using country names
 joined_table <- countries %>%
-  full_join(gdp_df, by = c("Country" = "Country")) %>%
+  left_join(gdp_df, by = c("Country" = "Country")) %>%
   full_join(population_df, by = c("Country" = "Country")) %>%
   full_join(incarceration_df, by = c("Country" = "Country")) %>%
   full_join(area_df, by = c("Country" = "Country"))
