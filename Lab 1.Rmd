@@ -287,9 +287,8 @@ YOUR ANALYSIS HERE
 7
 
 ```{r, cache=TRUE}
-country_numeric <- apply(list_by_country[,5:19], 2, as.numeric)
-country_lst <- data.frame(html_table(all.tables[6]))
-country_slim_lst <- data.table(select(country_lst, X2022.rank, Country, X2022))
+country_numeric <- apply(countries[,5:19], 2, as.numeric)
+country_slim_lst <- data.table(select(countries, X2022.rank, Country, X2022))
 tmp_heat <-rowMeans(country_numeric[,-1:-4]) 
 country_slim_lst <- mutate(.data = country_slim_lst, avg = tmp_heat)
 countries_avg_rating = arrange(country_slim_lst, Country)
@@ -308,9 +307,9 @@ mapCountryData(heat_map_dat, nameColumnToPlot = "avg", mapTitle = "Average democ
 
 #now we will repeat this function to show the differences between 2006 and 2022:
 
-country_lst$Country = gsub("Eswatini", "Swaziland", country_lst$Country)
-country_lst$Country = gsub("North Macedonia", "Macedonia", country_lst$Country)
-democracy_index = country_lst %>% select(Country, X2022, X2006) %>%
+countries$Country = gsub("Eswatini", "Swaziland", countries$Country)
+countries$Country = gsub("North Macedonia", "Macedonia", countries$Country)
+democracy_index = countries %>% select(Country, X2022, X2006) %>%
   mutate(Difference = (X2022 - X2006)) %>% arrange(Country)
 
 dimocracymaps_heat = joinCountryData2Map(democracy_index, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
@@ -326,7 +325,7 @@ YOUR ANALYSIS HERE
 ```{r, cache=TRUE}
 components_lst <- data.frame(html_table(all.tables[7]))
 
-#we will change the columns names by a new vector
+#we will change the columns names
 colnames(components_lst) <- c("Rank", "chage_in_rank", "Country",  "Regime_type", "Overall_score", "chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
 
 # Removing all the "Na" cells
@@ -340,11 +339,10 @@ components_lst[, components_lst_numeric] <- sapply(components_lst[, components_l
 
 
 #Using the merge function to merge all the columns
-country_lst <- merge(country_lst, components_lst, by = "Country", x.all = FALSE)
-
+countries <- merge(countries, components_lst, by = "Country", x.all = FALSE)
 
 #Display the top 5 rows:
-head(components_lst, 5)
+head(components_lst, 2)
 
 ```
 
