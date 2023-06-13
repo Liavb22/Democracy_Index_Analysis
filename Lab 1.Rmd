@@ -218,6 +218,7 @@ gdp_df <- as.data.frame(html_table(gdp_tables[2], fill = TRUE))
 colnames(gdp_df) <- paste(colnames(gdp_df), "-", gdp_df[1,])
 colnames(gdp_df)[1] <- "Country"
 gdp_df$Country <- gsub("\\\u202F\\*", "",gdp_df$Country)
+gdp_df$`CIA.8..9..10. - Estimate` <- as.double(gsub(",", "", gdp_df$`CIA.8..9..10. - Estimate`))
 
 # Load population size table
 population_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
@@ -225,6 +226,7 @@ population_table <- html_table(html_nodes(population_page, "table")[[2]])
 population_df <- data.frame(population_table)
 colnames(population_df) <- population_df[1,]
 colnames(population_df)[2] <- "Country"
+population_df$Numbers <- as.double(gsub(",","", population_df$Numbers))
 
 # Load incarceration rates table
 incarceration_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_by_incarceration_rate")
@@ -232,12 +234,17 @@ incarceration_table <- html_table(html_nodes(incarceration_page, "table")[[2]])
 incarceration_df <- data.frame(incarceration_table)
 colnames(incarceration_df)[1] <- "Country"
 incarceration_df$Country <- gsub("\\s\\[Note]", "", incarceration_df$Country)
+incarceration_df$Country <- gsub("\\\u202F\\*", "",incarceration_df$Country)
+incarceration_df$Rate.per.100.000..3. <- as.double(gsub(",", "", incarceration_df$Rate.per.100.000..3.))
 
 # Load area table
 area_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area")
 area_table <- html_table(html_nodes(area_page, "table")[[2]])
 area_df <- data.frame(area_table)
 colnames(area_df)[2] <- "Country"
+area_df$Landin.km2..mi2.<- gsub("\\s\\(.*", "", area_df$Landin.km2..mi2.)
+area_df$Landin.km2..mi2.<- as.double(gsub(",", "", area_df$Landin.km2..mi2.))
+
 
 # Join tables using country names
 joined_table <- countries %>%
@@ -255,7 +262,17 @@ YOUR ANALYSIS HERE
 5.b.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+dem_gdp <- joined_table %>% select(dem_index = X2022, cia_gdp = `CIA.8..9..10. - Estimate`, incarceration = Rate.per.100.000..3.)# %>% filter(! is.na(dem_index) & ! is.na(cia_gdp) )  #
+dem_gdp_lmodel <- lm(cia_gdp ~ dem_index, data = dem_gdp)  #Fitting a linear model
+plot(dem_gdp$dem_index, dem_gdp$cia_gdp, pch = 16, main = "GDP PLOTTED AGAINST DEMOCRACY INDEX", xlab = "DEMOCRACY INDEX", ylab = "GDP", col = "blue") #plotting gdp and democracy index
+abline(dem_gdp_lmodel, col = "purple", pch = 30, cex = 2)
+
+dem_incar_lmodel <- lm(incarceration ~ dem_index, data = dem_gdp)
+plot(x = dem_gdp$dem_index, y = dem_gdp$incarceration, pch = 16, main = "INCARCERATION PLOTTED AGAINST DEMOCRACY INDEX", xlab = "DEMOCRACY INDEX", ylab = "INCARCERATION (per 100,000)", col = "red")
+abline(dem_incar_lmodel, col = "orange", pch = 30, cex = 2)
+
+
+
 ```
 
 YOUR ANALYSIS HERE
@@ -263,7 +280,9 @@ YOUR ANALYSIS HERE
 6.a.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+X <- gdp_df$`CIA.8..9..10. - Estimate`
+x_ecdf <- ecdf(X)
+plot(x_ecdf)
 ```
 
 YOUR ANALYSIS HERE
@@ -271,7 +290,11 @@ YOUR ANALYSIS HERE
 6.b.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+Y_data <- joined_table %>% select(Country, gdp = `CIA.8..9..10. - Estimate`, population = Numbers) %>% filter(! is.na(gdp) & ! is.na(population)) %>% mutate(weighted_pop = population/sum(population, na.rm = TRUE))
+Y_weighted_pop <- Y_data$weighted_pop
+Y_gdp <- Y_data$gdp
+Y_ecdf <- ewcdf(Y_gdp, Y_weighted_pop )
+plot(Y_ecdf)
 ```
 
 YOUR ANALYSIS HERE
@@ -279,7 +302,13 @@ YOUR ANALYSIS HERE
 6.c.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+Z_data <- joined_table %>% select(Country, area = Landin.km2..mi2., gdp = `CIA.8..9..10. - Estimate`) %>% filter(! is.na(area) & ! is.na(gdp)) %>% mutate(weighted_area = area / sum(area, na.rm = TRUE))
+Z_weighted_area <- Z_data$weighted_area
+Z_gdp <- Z_data$gdp
+Z_ecdf <- ewcdf(Z_gdp, Z_weighted_area)
+plot(Z_ecdf)
+
+
 ```
 
 YOUR ANALYSIS HERE
@@ -323,27 +352,31 @@ YOUR ANALYSIS HERE
 8.a.
 
 ```{r, cache=TRUE}
-components_lst <- data.frame(html_table(all.tables[7]))
+#components_lst <- data.frame(html_table(all.tables[7])) there is a data frame called components
 
 #we will change the columns names
-colnames(components_lst) <- c("Rank", "chage_in_rank", "Country",  "Regime_type", "Overall_score", "chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+colnames(components) <- c("Rank", "chage_in_rank", "Country",  "Regime_type", "Overall_score", "chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
 
 # Removing all the "Na" cells
-components_lst <- components_lst[complete.cases(components_lst), ]
+components <- components[complete.cases(components), ]
 
 #Using the Union for all columns, as numeric
-components_lst_numeric <- c("Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+components_numeric <- c("Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
 
 # Using the as.numeric function to verify its all numeric
-components_lst[, components_lst_numeric] <- sapply(components_lst[, components_lst_numeric], as.numeric)
-
+components[, components_numeric] <- sapply(components[, components_numeric], as.numeric)
 
 #Using the merge function to merge all the columns
-countries <- merge(countries, components_lst, by = "Country", x.all = FALSE)
+total_data <- joined_table %>% full_join(components, by = c("Country" = "Country"))
 
 #Display the top 5 rows:
-head(components_lst, 2)
+head(total_data, 5)
 
+#Extracting data for correlation matrix
+cor_data <- total_data %>% select(Electoral_process_and_pluralism, Functioning_of_government, Political_participation, Political_culture, Civil_liberties, cia_gdp = `CIA.8..9..10. - Estimate`) %>% filter(! is.na(Civil_liberties))
+cor_matrix <- round(cor(cor_data),2)
+#correlation heatmap
+heatmap(cor_matrix)
 ```
 
 YOUR ANALYSIS HERE
@@ -351,7 +384,8 @@ YOUR ANALYSIS HERE
 8.b.
 
 ```{r, cache=TRUE}
-# YOUR CODE HERE
+democracy_gdp_model <- lm(formula = cia_gdp ~ Electoral_process_and_pluralism + Functioning_of_government + Political_participation + Political_culture + Civil_liberties, data = cor_data)
+summary(democracy_gdp_model)
 ```
 
-YOUR ANALYSIS HERE
+The coefficient that are significat at s.l of o.o1 are Electoral_process_and_pluralism, Functioning_of_government and Political_culture
