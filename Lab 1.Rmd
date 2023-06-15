@@ -352,7 +352,6 @@ YOUR ANALYSIS HERE
 8.a.
 
 ```{r, cache=TRUE}
-#components_lst <- data.frame(html_table(all.tables[7])) there is a data frame called components
 
 #we will change the columns names
 colnames(components) <- c("Rank", "chage_in_rank", "Country",  "Regime_type", "Overall_score", "chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
@@ -373,7 +372,13 @@ total_data <- joined_table %>% full_join(components, by = c("Country" = "Country
 head(total_data, 5)
 
 #Extracting data for correlation matrix
-cor_data <- total_data %>% select(Electoral_process_and_pluralism, Functioning_of_government, Political_participation, Political_culture, Civil_liberties, cia_gdp = `CIA.8..9..10. - Estimate`) %>% filter(! is.na(Civil_liberties))
+
+
+cor_data <- total_data %>% select(Electoral_process_and_pluralism, Functioning_of_government, Political_participation, Political_culture, Civil_liberties) %>% filter(! is.na(Civil_liberties))
+## we need to check if there is a problem with the last varible - cia_gdp = `CIA.8..9..10. - Estimate` do we need it for the metrix??
+
+#cor_data <- total_data %>% select(Electoral_process_and_pluralism, Functioning_of_government, Political_participation, Political_culture, Civil_liberties,cia_gdp = `CIA.8..9..10. - Estimate`) %>% filter(! is.na(Civil_liberties))
+
 cor_matrix <- round(cor(cor_data),2)
 #correlation heatmap
 heatmap(cor_matrix)
@@ -386,6 +391,18 @@ YOUR ANALYSIS HERE
 ```{r, cache=TRUE}
 democracy_gdp_model <- lm(formula = cia_gdp ~ Electoral_process_and_pluralism + Functioning_of_government + Political_participation + Political_culture + Civil_liberties, data = cor_data)
 summary(democracy_gdp_model)
+
+#of coefficients at α = 0.01
+coef_alfa1 <- summary(democracy_gdp_model)$coefficients[summary(democracy_gdp_model)$coefficients[, "Pr(>|t|)"] < 0.01, ]
+coef_alfa1
+
+# finding the outliers
+democracy_gdp_model$residuals <- resid(democracy_gdp_model)
+out_liers <-  boxplot.stats(democracy_gdp_model$residuals)["out"]
+out_liers
+
+cat("The countries with outliers are:", paste0(components[democracy_gdp_model$residual %in% out_liers[[1]], "Country"], sep =","),"\n")
+
 ```
 
 The coefficient that are significat at s.l of o.o1 are Electoral_process_and_pluralism, Functioning_of_government and Political_culture
