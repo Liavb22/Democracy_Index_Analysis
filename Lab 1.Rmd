@@ -19,7 +19,7 @@ library(spatstat.geom)
 
 ```
 
-**Solution:** (Fill code, text, plots etc.)
+# **Solution:**
 
 # 1.a. Loading the data via URL connection:
 
@@ -34,7 +34,7 @@ head(countries,5)
 head(components,5)
 ```
 
-# 1.b.
+# 1.b. Dominant countries in the democracy index
 
 ```{r, cache=TRUE}
 countries_rate <- as.data.frame(countries)
@@ -44,8 +44,6 @@ Average <- rowMeans(countries_rate %>% select(-c(Region,X2022.rank,Country, Regi
 top_countries_avg <- countries_rate %>% mutate(Average) %>% select(Country,Average) %>% arrange(desc(Average)) %>% head(5)
 bottom_countries_avg <- countries_rate %>% mutate(Average) %>% select(Country, Average) %>% arrange(Average) %>% head(5)
 ```
-
-YOUR ANALYSIS HERE:
 
 Top countries in democracy index for 2022:
 
@@ -71,7 +69,7 @@ By 2006 -2022 Average:
 bottom_countries_avg
 ```
 
-# 2.a.
+# 2.a. Box plots by regions 
 
 ```{r, cache=TRUE}
 p2 <- ggplot(countries)
@@ -89,23 +87,20 @@ p4[out_ind_4,]
 
 ```
 
-
-2.b.
+# 2.b. Regions density plots
 
 ```{r, cache=TRUE}
 p5 <- ggplot(countries,aes(X2022)) + geom_density(alpha=.2, fill= "#00BFC4") + facet_wrap(~Region)
-p5
+p5 
 p6 <- countries %>% 
      group_by(Region) %>%
      summarize(Mean = mean(X2022), Variance = var(X2022), Skewness = skewness(X2022), Kurtosis = kurtosis(X2022))
-p6
+p6 
 ```
 
-From the density plots above we can see that they d'ont resamble to the normal distribution In addition we can see how the Skewness reflect in the plots, where Middle East and North Africa and Sub-Saharan Africa have the right tail as a positive Skewness. er can see that the plots of the regions apart from North America have a negative Skewness. 
-North America have a low variance and have no tail at all. It have Kurtosis of 1.
- 
+From the density plots above, we can see that they don't resemble to the normal distribution. In addition we can see how the Skewness reflect in the plots, where Middle East and North Africa and Sub-Saharan Africa have the right tail as expected with positive Skewness. Moreover, we can see that the plots of the regions, apart from North America, have a negative Skewness. North America have a low variance and have no tail at all. It has Kurtosis of 1.
 
-3.a.
+# 3.a. Democracy index between 2006-2022 in selected countries and regions
 
 ```{r, cache=TRUE}
 Countries_graphs <- function(df, names){
@@ -139,8 +134,9 @@ Countries_graphs(countries, c("Israel", "India", "Germany","Iran","Indonesia"))
 Countries_graphs(regions,p6$Region)
 ```
 
-We can see that all the regions did not had any significant changes between 2006 to 2022. most of them keep staing at the same values.
-3.b.
+We can see that all the regions did not had any significant changes between 2006 to 2022.
+
+# 3.b. Clustering Countries by their democracy index
 
 ```{r, cache=TRUE}
 col <- colnames(countries)
@@ -188,17 +184,17 @@ Countries_graphs(countries, clst8)
 
 ```
 
-Now we will analyze all the clusters:
-cluster 1 - we can see a pattern of improvement in democracy index. 
-cluster 2 - we can see a pattern of deterioration in democracy index.
-cluster 3 - we can see a slight improvement in democracy index.
-cluster 4 - we can see a slight deterioration in democracy index.
-cluster 5 - this plot have no country at all.
-cluster 6 - we can see a pattern of improvement at first but then deterioration. a big change in the democracy index indicates an unstable regimes.
-cluster 7 - we can see many countries that all most did not change in their democracy index, because of a stable regimes.
+**Now we will analyze all the clusters**:  
+cluster 1 - we can see a pattern of improvement in democracy index.  
+cluster 2 - we can see a pattern of deterioration in democracy index.  
+cluster 3 - we can see a slight improvement in democracy index.  
+cluster 4 - we can see a slight deterioration in democracy index.  
+cluster 5 - this plot have no country at all.  
+cluster 6 - we can see a pattern of improvement at first but then deterioration. a big change in the democracy index indicates an unstable regimes.  
+cluster 7 - we can see many countries that all most did not change in their democracy index, because of a stable regimes.  
 cluster 8 - we can see that most of the countries are in this cluster, because it is a problem to analyze and understand any pattern.
 
-4.  
+# 4. **Regimes democratic mobility**
 
 ```{r, cache=TRUE}
 
@@ -222,7 +218,7 @@ heatmap(rgm_prb)
 
 We can see in this heat probability map, that as expected - the chances to move from non democratic regime to democratic one is low, and higher if the regime type is similar to the current regime type.
 
-5.a.
+# 5.a. **Joining more data together**
 
 ```{r, cache=TRUE}
 # Load GDP table
@@ -271,12 +267,10 @@ joined_table <- countries %>%
 head(joined_table, 5)
 ```
 
-
-
-5.b.
+# 5.b. **Simple linear regression**
 
 ```{r, cache=TRUE}
-dem_gdp <- joined_table %>% select(dem_index = X2022, cia_gdp = `CIA.8..9..10. - Estimate`, incarceration = Rate.per.100.000..3.)# %>% filter(! is.na(dem_index) & ! is.na(cia_gdp) )  #
+dem_gdp <- joined_table %>% select(dem_index = X2022, cia_gdp = `CIA.8..9..10. - Estimate`, incarceration = Rate.per.100.000..3.) 
 dem_gdp_lmodel <- lm(cia_gdp ~ dem_index, data = dem_gdp)  #Fitting a linear model
 summary(dem_gdp_lmodel)
 
@@ -291,45 +285,44 @@ abline(dem_incar_lmodel, col = "orange", pch = 30, cex = 2)
 
 ```
 
-The first plot of linear regression  (the blue dots) - GDP explained by democracy index. We can some linear connection between the variables and we have few high GDP with respectively low democracy index.
-The second plot (the red dots) - Incarceration explained bt democracy index. we can see there is no corrolation between this two.
+The first plot of linear regression (the blue dots) - GDP explained by democracy index. We can see some linear connection between the variables and we have few high GDP with respectively low democracy index. The second plot (the red dots) - Incarceration explained with democracy index. We can see there is no correlation between this two.
 
-6.a.
+# 6.a. **Empirical Cumulative Distribution Functions**
 
 ```{r, cache=TRUE}
 X <- gdp_df$`CIA.8..9..10. - Estimate`
 x_ecdf <- ecdf(X)
-plot(x_ecdf)
+plot(x_ecdf,main = "GDP (PPP) per capita of a randomly selected country", xlab = "GDP", ylab = "F(X)")
 ```
 
-YOUR ANALYSIS HERE
+We can see the the ECDF of GDP per country. Approximately 90% of the countries have less than 50,000$ GDP per capita. 
 
-6.b.
+#6.b.
 
 ```{r, cache=TRUE}
 Y_data <- joined_table %>% select(Country, gdp = `CIA.8..9..10. - Estimate`, population = Numbers) %>% filter(! is.na(gdp) & ! is.na(population)) %>% mutate(weighted_pop = population/sum(population, na.rm = TRUE))
 Y_weighted_pop <- Y_data$weighted_pop
 Y_gdp <- Y_data$gdp
 Y_ecdf <- ewcdf(Y_gdp, Y_weighted_pop )
-plot(Y_ecdf)
+plot(Y_ecdf,main = "GDP (PPP) per capita of a randomly selected person", xlab = "GDP", ylab = "F(Y)")
 ```
 
-We can see here the differences between X plot(6.a) to Y plot (6.b), where as Y reflect more accurately the GDP around the world - 90% of people are below 30,000 GDP per year, very low productivity.
+We can see here the differences between X plot(6.a) to Y plot (6.b), whereas Y reflects more accurately the GDP around the world - 90% of people are below 30,000 GDP per year, very low productivity.
 
-6.c.
+# 6.c.
 
 ```{r, cache=TRUE}
 Z_data <- joined_table %>% select(Country, area = Landin.km2..mi2., gdp = `CIA.8..9..10. - Estimate`) %>% filter(! is.na(area) & ! is.na(gdp)) %>% mutate(weighted_area = area / sum(area, na.rm = TRUE))
 Z_weighted_area <- Z_data$weighted_area
 Z_gdp <- Z_data$gdp
 Z_ecdf <- ewcdf(Z_gdp, Z_weighted_area)
-plot(Z_ecdf)
+plot(Z_ecdf,main = "GDP (PPP) per capita of a randomly selected area", xlab = "GDP", ylab = "F(Z)")
 
 ```
 
 This plot similar to X plot (6.a) more then Y plot because it is plot of the GDP around regions and not peoples, it is more close to countries.
 
-7
+# 7. **Mapping democarcy index**
 
 ```{r, cache=TRUE}
 country_numeric <- apply(countries[,5:19], 2, as.numeric)
@@ -363,10 +356,9 @@ mapCountryData(dimocracymaps_heat, nameColumnToPlot = "Difference", mapTitle = "
 
 ```
 
-At the first heat map of the world we can see that the western world is more democratic then the eastern side ( except Australia and most of Europe).
-The second heat map show the difference index between 2022 to 2006. we can see that the south world became more democratic. 
+At the first heat map of the world we can see that the western world is more democratic then the eastern side (except Australia and most of Europe). The second heat map show the difference index between 2022 to 2006. we can see that the south world became more democratic.
 
-8.a.
+# 8.a. **Democracy components**
 
 ```{r, cache=TRUE}
 
@@ -400,7 +392,7 @@ heatmap(cor_matrix)
 
 This is the heat map of the correlation of the components of democracy.
 
-8.b.
+# 8.b. **Multiple linear regression**
 
 ```{r, cache=TRUE}
 outlier_table <- total_data %>% select( Country,cia_gdp = `CIA.8..9..10. - Estimate` ,Electoral_process_and_pluralism,Functioning_of_government,Political_participation, Political_culture,Civil_liberties) %>% filter(! is.na(cia_gdp) & !is.na(Electoral_process_and_pluralism) & !is.na(Functioning_of_government) & !is.na(Political_participation) & !is.na(Political_culture) & !is.na(Civil_liberties))
@@ -415,7 +407,6 @@ coef_alfa1
 # finding the outliers
 democracy_gdp_model$residuals <- resid(democracy_gdp_model)
 out_liers <-  boxplot.stats(democracy_gdp_model$residuals)["out"]
-out_liers
 
 cat("The countries with outliers are:", paste0(components[democracy_gdp_model$residual %in% out_liers[[1]], "Country"], sep =","),"\n")
 
@@ -426,4 +417,4 @@ tail(outlier_table,5)
 
 ```
 
-Another thing that can affect GDP is that a country have natural resources like Qatar, United Arab Emirates and Luxembourg.
+Things that can affect GDP besides democracy can be natural resources for example (in countries like Qatar, United Arab Emirates and Luxembourg).
