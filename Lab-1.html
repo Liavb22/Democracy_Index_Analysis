@@ -448,7 +448,9 @@ display: none;
 ## The following object is masked from &#39;package:data.table&#39;:
 ## 
 ##     shift</code></pre>
-<p><strong>Solution:</strong></p>
+<div id="solution" class="section level1">
+<h1><strong>Solution:</strong></h1>
+</div>
 <div id="a.-loading-the-data-via-url-connection" class="section level1">
 <h1>1.a. Loading the data via URL connection:</h1>
 <pre class="r"><code>democracy &lt;- read_html(&quot;https://en.wikipedia.org/wiki/Democracy_Index&quot;)
@@ -997,7 +999,9 @@ dimocracymaps_heat = joinCountryData2Map(democracy_index, joinCode=&quot;NAME&qu
 is more democratic then the eastern side (except Australia and most of
 Europe). The second heat map show the difference index between 2022 to
 2006. we can see that the south world became more democratic.</p>
-<p>#8.a. <strong>Democracy components</strong></p>
+</div>
+<div id="a.-democracy-components" class="section level1">
+<h1>8.a. <strong>Democracy components</strong></h1>
 <pre class="r"><code>#we will change the columns names
 colnames(components) &lt;- c(&quot;Rank&quot;, &quot;chage_in_rank&quot;, &quot;Country&quot;,  &quot;Regime_type&quot;, &quot;Overall_score&quot;, &quot;chage_in_score&quot;, &quot;Electoral_process_and_pluralism&quot;, &quot;Functioning_of_government&quot;, &quot;Political_participation&quot;, &quot;Political_culture&quot;, &quot;Civil_liberties&quot;)
 
