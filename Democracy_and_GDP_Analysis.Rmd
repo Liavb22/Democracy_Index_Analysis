@@ -1,0 +1,439 @@
+---
+title: "Democracies and GDP's Around The World-An Analysis"
+author: "Liav Botton & Shachar Cygler, At the guidence of prof. Or Tzuk"
+date: "20/04/2025"
+output: html_document
+---
+
+```{r libraries ,echo=FALSE,warning=FALSE,message=FALSE}
+library(tidyverse)  
+library(data.table)
+library(rworldmap) # world map
+library(ggthemes)
+library(reshape2) # melt: change data-frame format long/wide
+library(e1071) # skewness and kurtosis
+library(rvest)
+library(corrplot)
+library(moments)
+library(spatstat.geom)
+
+```
+
+# Introduction
+
+Democracy has changed a lot since the days of the Greek empire, where small group- males with property and honor, had a privilege to vote about issues concerning everyday life, and now days, Democracy has lots of aspects and ways to implement it.\
+Democracy Index try to do the hard mission of grading each country and its level of Democracy.\
+Besides being the preferred way to live in the Western civilization, democracy believed to be a more prosperous and economically rewarding to the civilians living under this such of authorities. A way to examine this assumption is by checking the Growth Domestic Production (GDP) of each country and look at the data.
+
+# 1 **Data prep and Democracy Index**
+
+## (a) Loading the data via URL connection:
+
+```{r, cache=TRUE}
+democracy <- read_html("https://en.wikipedia.org/wiki/Democracy_Index")
+all.tables = html_nodes(democracy, "table")
+regions <- as.data.frame(html_table(all.tables[4], fill = TRUE))
+countries <- as.data.frame(html_table(all.tables[6], fill = TRUE))
+components <- as.data.frame(html_table(all.tables[7], fill = TRUE)) %>% filter(Country != c("Full democracies",NA)) %>% select(- c(".mw.parser.output..tooltip.dotted.border.bottom.1px.dotted.cursor.help.Δ.Rank"))
+head(regions,5)
+head(countries,5)
+head(components,5)
+```
+
+## (b) Dominant countries in the democracy index
+
+```{r, cache=TRUE}
+countries_rate <- as.data.frame(countries) %>%
+  mutate(rate_of_2024 = X2024,
+        average_until_2023 = rowMeans(countries %>% select(-c(Region,X2024.rank,Country, Regime.type)))) %>%
+  mutate(average_until_2023 = round(average_until_2023,2)) %>%
+  select(Country,rate_of_2024,average_until_2023)
+
+print("top countries for 2024 and their 2006-2023 average:")
+countries_rate %>% arrange(desc(rate_of_2024)) %>% head()
+
+print("Lowest countries of 2024 and their 2006-2023 average:")
+countries_rate %>% arrange(rate_of_2024) %>% head()
+```
+
+# 2
+
+## (a) Box plots by regions
+
+Let's have a quick summary of the Democracy rate, arranged by box plots of each regions. It can give us understanding on the level of Democracy in each region, and the gaps between countries on each region. The bigger the box plot - The higher the gaps between the countries.
+
+```{r Box plot by regions, cache=TRUE}
+p2 <- ggplot(countries)
+p2 <- p2 + geom_boxplot(aes(x=Region, y=X2024)) +theme(text = element_text(size = 5)) + labs(y = "2024",title = "Box plots by regions")
+p2
+
+```
+
+Now let's have a look on some unique countries, in terms of Democracy Index, In our close neighborhood:
+
+```{r, warning=FALSE}
+p3 <- countries %>% select(Country,Region,X2024) %>% filter(Region == "Middle East and North Africa")
+p4 <- countries %>% select(Country,Region,X2024) %>% filter(Region == "Western Europe")
+out_3 <- boxplot.stats(p3$X2024)$out
+out_ind_3 <- which(p3$X2024 %in% c(out_3))
+out_4 <- boxplot.stats(p4$X2024)$out
+out_ind_4 <- which(p4$X2024 %in% c(out_4))
+print("Outliers Countries In Westren Europe and the Middle East:")
+rbind(p3[out_ind_3,],p4[out_ind_4,]) %>% mutate(Rate_of_2024 = X2024) %>% select(-c(X2024))
+
+```
+
+We can see that Israel is the uniquely country in terms of high Democracy Rate in the middle east, and Turkey is uniquely low in Democracy Rate in Western Europe. Pretty much as expected.
+
+## (b) Regions density plots
+
+```{r, cache=TRUE}
+p5 <- ggplot(countries,aes(X2024)) + geom_density(alpha=.2, fill= "#00BFC4") + facet_wrap(~Region)
+p5 
+p6 <- countries %>% 
+     group_by(Region) %>%
+     summarize(Mean = round(mean(X2024),2),
+               Variance = round(var(X2024),2),
+               Skewness = round(skewness(X2024),2),
+               Kurtosis = round(kurtosis(X2024),2))
+p6 
+```
+
+From the density plots above, we can see that they don't resemble to the normal distribution. In addition we can see how the Skewness reflect in the plots, where Middle East and North Africa and Sub-Saharan Africa have the right tail as expected with positive Skewness. Moreover, we can see that the plots of the regions, apart from North America, have a negative Skewness. North America have a low variance and have no tail at all. It has Kurtosis of 1.
+
+# 3
+
+## (a) Democracy index between 2006-2024 in selected countries and regions
+
+```{r, cache=TRUE,warning=FALSE}
+Countries_graphs <- function(df, names){
+  colnames <- colnames(df)
+  if (sum(is.element(names, df$Region)) > 0) { x <- "Region" }
+  else x <- "Country"
+  
+  y <-melt(df, id.vars = x)
+  
+  if (x == "Region"){
+    y <- y %>% filter(Region %in% names)
+    y <- y%>%  mutate(year = as.Date(as.character(ISOdate(as.numeric(gsub('X', '', variable)),12,31)))) %>% 
+    filter(! year< "2006-12-31") %>% mutate(val = as.double(value))
+    ggplot(y, aes(x = year, y =val)) + geom_line(aes(color = Region)) + labs(title="Democracy", 
+         subtitle="Between the years 2006-2022",
+         caption="Source: Wikipedia",
+         x="Years",
+         fill="Entities") 
+  }
+  else{
+    y <- y %>% filter(Country %in% names)
+    y <- y%>%  mutate(year = as.Date(as.character(ISOdate(as.numeric(gsub('X', '', variable)),12,31)))) %>% 
+    filter(! year< "2006-12-31") %>% mutate(val = as.double(value))
+    ggplot(y, aes(x = year, y =val)) + geom_line(aes(color = Country))+ labs(title="Democracy Index", 
+         subtitle="Between the years 2006-2024",
+         caption="Source: Wikipedia",
+         x="Years",
+         fill="Entities") }
+}
+Countries_graphs(countries, c("Israel", "India", "Germany","Iran","Indonesia"))
+Countries_graphs(regions,p6$Region)
+```
+
+We can see that all the regions did not had any significant changes between 2006 to 2024.
+
+## (b) Clustering Countries by their democracy index
+
+```{r, cache=TRUE,warning=FALSE}
+col <- colnames(countries)
+
+max_value <- countries %>% select( colnames(countries)[which(col <= "X2024" & col >= "X2006")]) %>% apply( 1, max)
+ min_value <- countries %>% select( colnames(countries)[which(col <= "X2024" & col >= "X2006")]) %>% apply( 1, min)
+ 
+cntr <- countries %>% mutate(change = X2024 - X2006, max_value, min_value)
+
+
+cntr1 <- cntr %>% filter(change >= 1.5)
+clst1 <- cntr1$Country
+
+cntr2 <- cntr %>% filter(change <= -1.5)
+clst2 <- cntr2$Country
+
+cntr3 <- cntr %>% filter(change >= 0.75 & change <= 1.5)
+clst3 <- cntr3$Country
+
+cntr4 <- cntr %>% filter(change <= -0.75 & change >= -1.5)
+clst4 <- cntr4$Country
+
+cntr5 <- cntr %>% mutate(min_ref = X2022 - min_value) %>% filter(change <= -0.75 & min_ref  >= 0.75)
+clst5 <- cntr5$Country
+
+cntr6 <- cntr %>% mutate(max_ref = X2022 - max_value) %>% filter(change >= 0.75 & max_ref  <= -0.75)
+clst6 <- cntr6$Country
+
+cntr7 <- cntr %>% mutate(Max_min = max_value -min_value) %>% filter(Max_min <= 0.5)
+clst7 <- cntr7$Country
+
+Country <- unique(c(clst1, clst2, clst3, clst4, clst5, clst6, clst7))
+clst1_7 <- as.data.frame(Country)
+cntr8 <- cntr %>% anti_join(clst1_7)
+clst8 <- cntr8$Country
+
+Countries_graphs(countries, clst1)
+Countries_graphs(countries, clst2)
+Countries_graphs(countries, clst3)
+Countries_graphs(countries, clst4)
+Countries_graphs(countries, clst5)
+Countries_graphs(countries, clst6)
+Countries_graphs(countries, clst7)
+Countries_graphs(countries, clst8)
+
+```
+
+**Now we will analyze all the clusters**:\
+cluster 1 - we can see a pattern of improvement in democracy index.\
+cluster 2 - we can see a pattern of deterioration in democracy index.\
+cluster 3 - we can see a slight improvement in democracy index.\
+cluster 4 - we can see a slight deterioration in democracy index.\
+cluster 5 - this plot have no country at all.\
+cluster 6 - we can see a pattern of improvement at first but then deterioration. a big change in the democracy index indicates an unstable regimes.\
+cluster 7 - we can see many countries that all most did not change in their democracy index, because of a stable regimes.\
+cluster 8 - we can see that most of the countries are in this cluster, because it is a problem to analyze and understand any pattern.
+
+# 4 **Regimes democratic mobility**
+
+```{r, cache=TRUE, warning=FALSE}
+
+index_2006 <- countries$X2006
+regime_2006_type <- c('Full democracy','Flawed democracy','Hybrid regime','Authoritarian')
+
+
+regime_mobility <- countries %>% mutate(regime_2006 = regime_2006_type[(X2006<=10&X2006>=8)+ 2*(X2006 <8 & X2006 >= 6) + 3*(X2006 < 6 & X2006 >=4) +4*(X2006 < 4 & X2006 >=0)])
+                  
+regime_mobility <- regime_mobility %>% mutate(regime_pairs = paste(Regime.type,regime_2006))
+rgm_prb <- matrix(c(1:16),ncol = 4,byrow = TRUE)
+colnames(rgm_prb) <- paste(regime_2006_type) #Regime type in 2022
+rownames(rgm_prb) <- regime_2006_type #Regime type in 2006
+for (i in colnames(rgm_prb)){
+  for (j in rownames(rgm_prb)){
+    rgm_prb[j,i] <- length(which(regime_mobility$regime_pairs %in% paste(j,i)))/length(which(regime_mobility$Regime.type %in% i))
+  }
+} 
+heatmap(rgm_prb)
+```
+
+We can see in this heat probability map, that as expected - the chances to move from non democratic regime to democratic one is low, and higher if the regime type is similar to the current regime type.
+
+# 5
+
+## (a) **Joining more data together**
+
+```{r, cache=TRUE}
+# Load GDP table
+gdp_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita")
+gdp_tables <- html_nodes(gdp_page, "table")
+
+#select the IMF approximation of the World Bank
+gdp_df <- html_table(gdp_tables[2], header = FALSE,fill = TRUE)[[1]] %>%
+  select(X1, X2, X3) %>% filter()
+colnames(gdp_df) <- gdp_df[2,]
+
+#omiting first 2 rows
+gdp_df <- gdp_df[-c(1,2),]
+
+colnames(gdp_df)[1] <- "Country"
+
+#cleaning and formatting the table 
+gdp_df$Country <- gsub("\\\u202F\\*", "",gdp_df$Country)
+gdp_df$Projection <- as.double(gsub(",", "", gdp_df$Projection))
+gdp_df$Year <- as.integer(gsub("\\[.*?\\]", "", gdp_df$Year))
+gdp_df <- na.omit(gdp_df)
+
+# Load population size table
+population_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population")
+
+population_df <- html_table(html_nodes(population_page, "table")[[1]]) %>%
+  mutate(Population = as.integer(gsub(",","",Population)),
+         `% ofworld` = as.double(gsub("%","",`% ofworld`)) / 100,
+         Date = as.Date.character(Date,"%d %b %Y"))
+colnames(population_df)[1] <- "Country"
+
+# Load incarceration rates table
+incarceration_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_by_incarceration_rate")
+incarceration_df <- html_table(html_nodes(incarceration_page, "table")[[1]])
+colnames(incarceration_df)[1] <- "Country"
+incarceration_df$Country <- gsub("\\s\\[Note]", "", incarceration_df$Country)
+incarceration_df$Country <- gsub("\\\u202F\\*", "",incarceration_df$Country)
+incarceration_df$Rates <- as.double(gsub(",", "", incarceration_df$Rates))
+
+# Load area table
+area_page <- read_html("https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area")
+area_df <- html_table(html_nodes(area_page, "table")[[2]])
+colnames(area_df)[2] <- "Country"
+colnames(area_df)[1] <- "X1"
+colnames(area_df)[7] <- "X7"
+area_df$`Landin km2 (mi2)`<- gsub("\\s\\(.*", "", area_df$`Landin km2 (mi2)`)
+area_df$`Landin km2 (mi2)`<- as.double(gsub(",", "", area_df$`Landin km2 (mi2)`))
+area_df <- area_df %>% select(-c("X7","X1"))
+
+
+# Join tables using country names
+joined_table <- countries %>%
+  full_join(gdp_df, by = c("Country" = "Country")) %>%
+  full_join(population_df, by = c("Country" = "Country")) %>%
+  full_join(incarceration_df, by = c("Country" = "Country")) %>%
+  full_join(area_df, by = c("Country" = "Country"))
+
+# Display top five rows of the joined table
+head(joined_table, 5)
+```
+
+## (b) **Simple linear regression**
+
+```{r, cache=TRUE, warning=FALSE}
+dem_gdp <- joined_table %>% select(dem_index = X2024, gdp = Projection, incarceration = Rates) 
+dem_gdp_lmodel <- lm(dem_index ~ gdp, data = dem_gdp)  #Fitting a linear model
+summary(dem_gdp_lmodel)
+
+plot(dem_gdp$dem_index, dem_gdp$cia_gdp, pch = 16, main = "GDP PLOTTED AGAINST DEMOCRACY INDEX", xlab = "DEMOCRACY INDEX", ylab = "GDP", col = "blue") #plotting gdp and democracy index
+abline(dem_gdp_lmodel, col = "purple", pch = 30, cex = 2)
+
+dem_incar_lmodel <- lm(incarceration ~ dem_index, data = dem_gdp)
+summary(dem_incar_lmodel)
+
+plot(x = dem_gdp$dem_index, y = dem_gdp$incarceration, pch = 16, main = "INCARCERATION PLOTTED AGAINST DEMOCRACY INDEX", xlab = "DEMOCRACY INDEX", ylab = "INCARCERATION (per 100,000)", col = "red")
+abline(dem_incar_lmodel, col = "orange", pch = 30, cex = 2)
+
+```
+
+The first plot of linear regression (the blue dots) - GDP explained by democracy index. We can see some linear connection between the variables and we have few high GDP with respectively low democracy index. The second plot (the red dots) - Incarceration explained with democracy index. We can see there is no correlation between this two.
+
+# 6
+
+## (a) **Empirical Cumulative Distribution Functions**
+
+```{r, cache=TRUE}
+X <- gdp_df$Projection
+x_ecdf <- ecdf(X)
+plot(x_ecdf,main = "GDP (PPP) per capita of a randomly selected country", xlab = "GDP", ylab = "F(X)")
+x <- c(50000,50000)
+y <- c(0,1)
+lines(x,y, col = "red")
+```
+
+We can see the the ECDF of GDP per country. Approximately 90% of the countries have less than 80,000\$ GDP per capita.
+
+## (b)
+
+```{r, cache=TRUE}
+Y_data <- joined_table %>% select(Country, gdp = Projection, Population) %>% filter(! is.na(gdp) | ! is.na(Population)) %>% mutate(weighted_pop = Population/sum(Population, na.rm = TRUE))
+Y_weighted_pop <- Y_data$weighted_pop %>% na.omit()
+Y_gdp <- Y_data$gdp %>% na.omit()
+Y_ecdf <- ewcdf(Y_gdp, Y_weighted_pop )
+plot(Y_ecdf,main = "GDP (PPP) per capita of a randomly selected person", xlab = "GDP", ylab = "F(Y)")
+
+x <- c(50000,50000)
+y <- c(0,1)
+lines(x,y,col = "orange")
+```
+
+# 7 **Mapping democracy index**
+
+```{r, cache=TRUE}
+country_numeric <- apply(countries[,5:19], 2, as.numeric)
+country_slim_lst <- data.table(select(countries, X2024.rank, Country, X2024))
+tmp_heat <-rowMeans(country_numeric[,-1:-4]) 
+country_slim_lst <- mutate(.data = country_slim_lst, avg = tmp_heat)
+countries_avg_rating = arrange(country_slim_lst, Country)
+
+#we need to replace Eswatini with Swaziland
+countries_avg_rating$Country = gsub("Eswatini", "Swaziland", countries_avg_rating$Country)
+
+#again here we need to replace North Macedonia with Macedonia
+countries_avg_rating$Country = gsub("North Macedonia", "Macedonia", countries_avg_rating$Country)
+
+#using the join function to join all the tables:
+heat_map_dat = joinCountryData2Map(countries_avg_rating, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
+
+#the white countries are those who does not have an index of democracy
+mapCountryData(heat_map_dat, nameColumnToPlot = "avg", mapTitle = "Average democracy index by Country", addLegend = TRUE)
+
+#now we will repeat this function to show the differences between 2006 and 2024:
+
+countries$Country = gsub("Eswatini", "Swaziland", countries$Country)
+countries$Country = gsub("North Macedonia", "Macedonia", countries$Country)
+democracy_index = countries %>% select(Country, X2022, X2006) %>%
+  mutate(Difference = (X2022 - X2006)) %>% arrange(Country)
+
+dimocracymaps_heat = joinCountryData2Map(democracy_index, joinCode="NAME", nameJoinColumn="Country", verbose = TRUE)
+
+mapCountryData(dimocracymaps_heat, nameColumnToPlot = "Difference", mapTitle = "The difference index between 2024 to 2006 of democracy", addLegend = TRUE)
+
+```
+
+At the first heat map of the world we can see that the western world is more democratic then the eastern side (except Australia and most of Europe). The second heat map show the difference index between 2022 to 2006. we can see that the south world became more democratic.
+
+# 8
+
+## (a) **Democracy components**
+
+```{r, cache=TRUE}
+
+#we will change the columns names
+colnames(components) <- c("Rank","Country", "Regime_type","Overall_score","chage_in_score", "Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+
+# Removing all the "Na" cells
+components <- components[complete.cases(components), ]
+
+#Using the Union for all columns, as numeric
+components_numeric <- c("Electoral_process_and_pluralism", "Functioning_of_government", "Political_participation", "Political_culture", "Civil_liberties")
+
+# Using the as.numeric function to verify its all numeric
+components[, components_numeric] <- sapply(components[, components_numeric], as.numeric)
+
+#Using the merge function to merge all the columns
+total_data <- joined_table %>% full_join(components, by = c("Country" = "Country"))
+
+#Display the top 5 rows:
+head(total_data, 5)
+
+#Extracting data for correlation matrix
+
+
+cor_data <- total_data %>% select(Electoral_process_and_pluralism, Functioning_of_government, Political_participation, Political_culture, Civil_liberties) %>% filter(! is.na(Civil_liberties))
+
+cor_matrix <- round(cor(cor_data),2)
+#correlation heatmap
+heatmap(cor_matrix)
+```
+
+This is the heat map of the correlation of the components of democracy.
+
+## (b) **Multiple linear regression**
+
+```{r, cache=TRUE,warning=FALSE}
+outlier_table <- total_data %>% select( gdp =Projection,
+                                        Electoral_process_and_pluralism,
+                                        Functioning_of_government,
+                                        Political_participation,
+                                        Political_culture,
+                                        Civil_liberties) %>% na.omit()
+
+democracy_gdp_model <- lm(formula = gdp ~ ., data = outlier_table)
+summary(democracy_gdp_model)
+
+#of coefficients at α = 0.01
+coef_alfa1 <- summary(democracy_gdp_model)$coefficients[summary(democracy_gdp_model)$coefficients[, "Pr(>|t|)"] < 0.01, ]
+coef_alfa1
+
+# finding the outliers
+democracy_gdp_model$residuals <- resid(democracy_gdp_model)
+out_liers <-  boxplot.stats(democracy_gdp_model$residuals)["out"]
+
+cat("The countries with outliers are:", paste0(components[democracy_gdp_model$residual %in% out_liers[[1]], "Country"], sep =","),"\n")
+
+outlier_table <- outlier_table %>% mutate(residual = democracy_gdp_model$residual) %>% arrange(residual)
+
+head(outlier_table,5)
+tail(outlier_table,5)
+
+```
+
+Things that can affect GDP besides democracy can be natural resources for example (in countries like Qatar, United Arab Emirates and Luxembourg).
